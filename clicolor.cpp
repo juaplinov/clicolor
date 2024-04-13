@@ -1,64 +1,58 @@
-#include <stdio.h>
 #include <cmath>
 #include <string>
-#include <map>
 
 using namespace std;
 
       
-int resolution;
+int resolutionX;//  data from byte value
+int resolutionY;//  data from byte value
+bool flip = true;//  data from byte value
 
-int byteIterator = 0;
-int byteValue;//нада сделать локальными в colorreading
-float R, G, B;
 
-int resolutionStopMarker;
-int resolutionIterator = 0;
+int resolutionXIterator = 0;//  data for creating array info
+int resolutionYIterator = 0;//  data for creating array info
+int byteIterator = 0;//  data for creating array info
+int endOfLineStopMarker;// data for creating array info (to know is there are empty bytes)
+int resolutionIterator = 0;//!  data for creating array info (probably needs to be replaced with resolutionXIterator)
 
-char* BMPName();
-bool CheckBMP();
-int SkipTo10();
-void SkipToStart(int temp);
-void ColorReading();
-bool EndOfFile(float value);
-void roundUp(float multiple);
-string ColorWriting();
-bool Skipper();
-char *bmp = BMPName();
+
+int byteValue;// temp variable only while reading a file
+float R, G, B;// color values in float
+
+
+string** imageArrayInit();
+
+int SkipAndReturnStartValue();//  skips all unnecesary bytes and returns StartValue
+void GatherInfoAndSkipToStart(int startValue);// collect info from bytes and go to adress of start of the image's colors
+void ColorReading();//  read image's colors from bytes
+bool Skipper();//  skips empty bytes, if there are any
+
+string ColorWriting();//  returns image's colors as strings for output
+bool EndOfFile(float value);//  checks if it is end of file
+void roundUp(float multiple);//!  rounds a float to limit color palette (27 colors) !!using cmath!!
+
+
+char* BMPName();//  function to get filename of image
+bool CheckBMP();//  check if the file actually exists
+
+char *bmp = BMPName();//  filename of image
 FILE *fp = fopen(bmp, "rb");// open file in binary mode
+string** imageArray;//  image array
 
-
-
-int main(){
-    
-    string modifiedString = "\033[0;41m  \033[0m\n";
-    printf("%s", modifiedString.c_str());
-    printf("\n %i\n", resolutionStopMarker);
-    
-
-    if (!CheckBMP())//                              проверка на наличие
-    {
-        return 0;
-    }
-
-    int temp = SkipTo10();//                                   скип до цифры с числом старта фотки
-    
-    SkipToStart(temp);//                            скип до начала фотки
-
-    ColorReading();//                               чтение фотки
-    
-
-    fclose(fp);
-    return 0;
+string** imageArrayInit()//  function to initialize 2d array of the image
+{
+    return NULL;
 }
 
-char* BMPName()
+char* BMPName()//  function to get filename of image
 {
-
     static char fname[16];
+    printf("Enter a filename of picture\n\tImage should be 24-bit .BMP format and less then 255px by 255px\n>>>");
     scanf("%s",fname);
     return fname;
 }
+
+
 bool CheckBMP()
 {
     
@@ -72,7 +66,7 @@ bool CheckBMP()
     }
 }
 
-int SkipTo10(){
+int SkipAndReturnStartValue(){
     fgetc(fp);
     int startValue;
     for (byteIterator; byteIterator < 10; byteIterator++)
@@ -84,15 +78,30 @@ int SkipTo10(){
     
 }
 
-void SkipToStart(int temp)
+void GatherInfoAndSkipToStart(int startValue)
 {
-    for (byteIterator; byteIterator < temp-1; byteIterator++)
+    for (byteIterator; byteIterator < startValue - 1; byteIterator++)
     {
         byteValue = fgetc(fp);
         if (byteIterator == 17)
         {
-            resolution = byteValue;
-            resolutionStopMarker = (resolution + 4 - 1) / 4 * 4 - (((resolution + 4 - 1) / 4 * 4) - (3 * resolution));
+            resolutionX = byteValue;
+            endOfLineStopMarker = (resolutionX + 4 - 1) / 4 * 4 - (((resolutionX + 4 - 1) / 4 * 4) - (3 * resolutionX));
+        }
+        if (byteIterator == 21)
+        {
+            resolutionY = byteValue;
+            printf("%i",resolutionY);
+        }
+        if (byteIterator == 24)
+        {
+            if (byteValue == 255)
+            {
+                flip = true;
+                resolutionY =  256 - resolutionY;
+            }
+            else
+                flip = false;
         }
     }
     
@@ -112,8 +121,6 @@ void ColorReading()
         {
             continue;
         }
-
-
 
         B = fgetc(fp);
 
@@ -144,10 +151,10 @@ void ColorReading()
         }
 
         roundUp(128);
+        
+        imageArray[resolutionXIterator][resolutionYIterator] = ColorWriting();
 
-        printf("%s###\033[0m", ColorWriting().c_str());
-            
-
+        resolutionXIterator++;
     }
 }
 
@@ -281,7 +288,7 @@ string ColorWriting()
 
     if (R == 256 && G == 128 && B == 128)//PINK!!!!!!!!!!!!!!!!!!!! NOT PINK
     {
-        return "\033[0;43;31m";
+        return "\033[0;41;33m";
     }
 
     if (R == 256 && G == 128 && B == 256)//PINK
@@ -312,17 +319,74 @@ string ColorWriting()
 
 bool Skipper()
 {
-    if (resolutionIterator > resolutionStopMarker)
+    if (resolutionIterator > endOfLineStopMarker)
     {
         resolutionIterator = 0;
-        for (int i = 0; i < ((resolution * 3 + 4 - 1) / 4 * 4) - (3 * resolution); i++)
+        for (int i = 0; i < ((resolutionX * 3 + 4 - 1) / 4 * 4) - (3 * resolutionX); i++)
         {
-            printf(":)");
+            //printf(":)");
             fgetc(fp);
         }
-        printf("\n");
+        //printf("\n");
+        resolutionYIterator++;// переход на новую строку
+        resolutionXIterator = 0;
         return true;
             
     }
     return false;
+}
+
+
+int main(){  
+    //  getting bmp before main...
+
+    if (!CheckBMP())//  if bmp is missing, quit
+    {
+        return 0;
+    }
+
+    int startValue = SkipAndReturnStartValue();//  get start value
+    
+    GatherInfoAndSkipToStart(startValue);//  скип до начала фотки
+
+    imageArray = new string*[resolutionX];
+    for(int i = 0; i < resolutionX; ++i) 
+    {
+        imageArray[i] = new string[resolutionY];
+    }
+
+    ColorReading();//                               чтение фотки
+    
+    fclose(fp);
+
+    if (flip)
+    {
+        for (int j = 0; j < resolutionY; j++)
+        {
+            for (int i = 0; i < resolutionX; i++)
+            {
+                printf("%s⩨⩨⩨\033[0m", imageArray[i][j].c_str());
+            }
+            printf("\n");
+        
+        }
+    }else
+    {
+        for (int j = resolutionY-1; j > 0 ; j--)
+        {
+            for (int i = 0; i < resolutionX; i++)
+            {
+                printf("%s⩨⩨⩨\033[0m", imageArray[i][j].c_str());
+            }
+            printf("\n");
+        
+        }   
+    }
+
+    for(int i = 0; i < resolutionY; ++i) {
+        delete [] imageArray[i];
+    }
+    delete [] imageArray;
+
+    return 0;
 }
