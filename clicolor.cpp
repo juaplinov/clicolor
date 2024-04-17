@@ -1,7 +1,16 @@
-#include <cmath>
-#include <string>
 
-using namespace std;
+#include <stdio.h>
+
+class ColorPrefix
+{
+private:
+
+public:
+    char bgColor;
+    char fgColor;
+};
+
+
 
       
 int resolutionX;//  data from byte value
@@ -17,19 +26,18 @@ int resolutionIterator = 0;//!  data for creating array info (probably needs to 
 
 
 int byteValue;// temp variable only while reading a file
-float R, G, B;// color values in float
+int R, G, B;// color values in int
 
 
-string** imageArrayInit();
 
 int SkipAndReturnStartValue();//  skips all unnecesary bytes and returns StartValue
 void GatherInfoAndSkipToStart(int startValue);// collect info from bytes and go to adress of start of the image's colors
 void ColorReading();//  read image's colors from bytes
 bool Skipper();//  skips empty bytes, if there are any
 
-string ColorWriting();//  returns image's colors as strings for output
-bool EndOfFile(float value);//  checks if it is end of file
-void roundUp(float multiple);//!  rounds a float to limit color palette (27 colors) !!using cmath!!
+void ColorWriting();//  returns image's colors as strings for output
+bool EndOfFile(int value);//  checks if it is end of file
+int roundUp(int color, int multiple);//!  rounds a int to limit color palette (27 colors) !!using cmath!!
 
 
 char* BMPName();//  function to get filename of image
@@ -37,12 +45,9 @@ bool CheckBMP();//  check if the file actually exists
 
 char *bmp = BMPName();//  filename of image
 FILE *fp = fopen(bmp, "rb");// open file in binary mode
-string** imageArray;//  image array
 
-string** imageArrayInit()//  function to initialize 2d array of the image
-{
-    return NULL;
-}
+ColorPrefix** colorPrefix;
+
 
 char* BMPName()//  function to get filename of image
 {
@@ -150,15 +155,17 @@ void ColorReading()
             continue;
         }
 
-        roundUp(128);
+        R = roundUp(R, 128);
+        G = roundUp(G, 128);
+        B = roundUp(B, 128);
         
-        imageArray[resolutionXIterator][resolutionYIterator] = ColorWriting();
+        ColorWriting();
 
         resolutionXIterator++;
     }
 }
 
-bool EndOfFile(float value)
+bool EndOfFile(int value)
 {
     if (value == EOF)
     {
@@ -167,154 +174,210 @@ bool EndOfFile(float value)
 
 }
 
-void roundUp(float multiple)
+int roundUp(int color, int multiple)
 {
-    R = round(R / multiple) * multiple;
-    G = round(G / multiple) * multiple;
-    B = round(B / multiple) * multiple;
+    for (int i = 0; i <= 256; i += multiple)
+    {
+        if (color >= i - multiple/2 && color <= i+multiple/2)
+        {
+            color = i;
+            break;
+        }
+        
+    }
+    return color;
 }
 
-string ColorWriting()
+void ColorWriting()
 {
     if (R == 0 && G == 0 && B == 0)//BLACK
     {
-        return "\033[0;40;30m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '0';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '0';
+        return;
     }
 
     if (R == 0 && G == 0 && B == 128)//DARK BLUE
     {
-        return "\033[0;44;30m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '4';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '0';
+        return;
     }
 
     if (R == 0 && G == 0 && B == 256)//BLUE
     {
-        return "\033[0;44;34m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '4';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '4';
+        return;
     }
 
     if (R == 0 && G == 128 && B == 0)//DARK GREEN
     {
-        return "\033[0;42;30m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '2';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '0';
+        return;
     }
 
     if (R == 0 && G == 128 && B == 128)//DARK CYAN
     {
-        return "\033[0;46;34m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '6';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '4';
+        return;
     }
 
     if (R == 0 && G == 128 && B == 256)//GREENISH BLUE
     {
-        return "\033[0;46;32m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '6';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '2';
+        return;
     }
 
     if (R == 0 && G == 256 && B == 0)//GREEN
     {
-        return "\033[0;42;32m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '2';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '2';
+        return;
     }
 
     if (R == 0 && G == 256 && B == 128)//BLUEISH GREEN
     {
-        return "\033[0;42;36m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '2';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '6';
+        return;
     }
 
     if (R == 0 && G == 256 && B == 256)//CYAN
     {
-        return "\033[0;46;36m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '6';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '6';
+        return;
     }
 
     if (R == 128 && G == 0 && B == 0)//DARK RED
     {
-        return "\033[0;41;30m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '1';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '0';
+        return;
     }
 
     if (R == 128 && G == 0 && B == 128)//DARK MAGENTA
     {
-        return "\033[0;45;30m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '5';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '0';
+        return;
     }
 
     if (R == 128 && G == 0 && B == 256)//DARK MAGENTA BUT A BIT OF KINDA BLUE BUT NOT REALLY
     {
-        return "\033[0;45;34m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '5';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '4';
+        return;
     }
 
     if (R == 128 && G == 128 && B == 0)//DARK YELLOW
     {
-        return "\033[0;43;30m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '3';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '0';
+        return;
     }
 
     if (R == 128 && G == 128 && B == 128)//GREY
     {
-        return "\033[0;40;37m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '0';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '7';
+        return;
     }
 
     if (R == 128 && G == 128 && B == 256)//BLUE BUT SLIGHTLY LIGHTER THAN DARK BLUE
     {
-        return "\033[0;44;35m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '4';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '5';
+        return;
     }
 
     if (R == 128 && G == 256 && B == 0)//LIME GREEN WITH YELLOW
     {
-        return "\033[0;42;33m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '2';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '3';
+        return;
     }
 
     if (R == 128 && G == 256 && B == 128)//LIGHT GREEN
     {
-        return "\033[0;42;37m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '2';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '7';
+        return;
     }
 
     if (R == 128 && G == 256 && B == 256)//GREENISH CYAN
     {
-        return "\033[0;46;32m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '6';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '2';
+        return;
     }
 
     if (R == 256 && G == 0 && B == 0)//RED
     {
-        return "\033[0;41;31m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '1';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '1';
+        return;
     }
 
     if (R == 256 && G == 0 && B == 128)//BLUEISH MAGENTA
     {
-        return "\033[0;45;34m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '5';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '4';
+        return;
     }
 
     if (R == 256 && G == 0 && B == 256)//MAGENTA
     {
-        return "\033[0;45;35m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '5';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '5';
+        return;
     }
 
     if (R == 256 && G == 128 && B == 0)//ORANGE
     {
-        return "\033[0;43;31m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '3';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '1';
+        return;
     }
 
     if (R == 256 && G == 128 && B == 128)//PINK!!!!!!!!!!!!!!!!!!!! NOT PINK
     {
-        return "\033[0;41;33m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '1';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '3';
+        return;
     }
 
     if (R == 256 && G == 128 && B == 256)//PINK
     {
-        return "\033[0;45;37m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '5';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '7';
+        return;
     }
 
     if (R == 256 && G == 256 && B == 0)//YELLOW
     {
-        return "\033[0;43;33m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '3';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '3';
+        return;
     }
 
     if (R == 256 && G == 256 && B == 128)//LIGHT YELLOW
     {
-        return "\033[0;43;37m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '3';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '7';
+        return;
     }
 
     if (R == 256 && G == 256 && B == 256)//WHITE
     {
-        return "\033[0;47;37m";
+        colorPrefix[resolutionXIterator][resolutionYIterator].bgColor = '7';
+        colorPrefix[resolutionXIterator][resolutionYIterator].fgColor = '7';
+        return;
     }
-
-
-
-    
-    return "\033[0;47m";
 }
 
 bool Skipper()
@@ -324,10 +387,8 @@ bool Skipper()
         resolutionIterator = 0;
         for (int i = 0; i < ((resolutionX * 3 + 4 - 1) / 4 * 4) - (3 * resolutionX); i++)
         {
-            //printf(":)");
             fgetc(fp);
         }
-        //printf("\n");
         resolutionYIterator++;// переход на новую строку
         resolutionXIterator = 0;
         return true;
@@ -349,23 +410,26 @@ int main(){
     
     GatherInfoAndSkipToStart(startValue);//  скип до начала фотки
 
-    imageArray = new string*[resolutionX];
+
+    //! NEW
+    colorPrefix = new ColorPrefix*[resolutionX];
     for(int i = 0; i < resolutionX; ++i) 
     {
-        imageArray[i] = new string[resolutionY];
+        colorPrefix[i] = new ColorPrefix[resolutionY];
     }
 
     ColorReading();//                               чтение фотки
     
     fclose(fp);
 
+    //! NEW
     if (flip)
     {
         for (int j = 0; j < resolutionY; j++)
         {
             for (int i = 0; i < resolutionX; i++)
             {
-                printf("%s⩨⩨⩨\033[0m", imageArray[i][j].c_str());
+                printf("\033[0;4%c;3%cm⩨⩨⩨\033[0m", colorPrefix[i][j].bgColor, colorPrefix[i][j].fgColor);
             }
             printf("\n");
         
@@ -376,7 +440,7 @@ int main(){
         {
             for (int i = 0; i < resolutionX; i++)
             {
-                printf("%s⩨⩨⩨\033[0m", imageArray[i][j].c_str());
+                printf("\033[0;4%c;3%cm⩨⩨⩨\033[0m", colorPrefix[i][j].bgColor, colorPrefix[i][j].fgColor);
             }
             printf("\n");
         
@@ -384,9 +448,9 @@ int main(){
     }
 
     for(int i = 0; i < resolutionY; ++i) {
-        delete [] imageArray[i];
+        delete [] colorPrefix[i];
     }
-    delete [] imageArray;
+    delete [] colorPrefix;
 
     return 0;
 }
